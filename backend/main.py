@@ -833,3 +833,245 @@ def delete_animal(animal_id: str, current_user: User = Depends(get_current_activ
     db.delete(db_animal)
     db.commit()
     return {"message": "Animal deleted successfully"}
+
+
+# ==================== Health Record ====================
+
+class HealthRecordBase(BaseModel):
+    family_member_id: Optional[str] = None
+    record_type: str
+    title: str
+    date: date
+    time: Optional[str] = None
+    doctor_name: Optional[str] = None
+    doctor_specialization: Optional[str] = None
+    hospital_clinic: Optional[str] = None
+    hospital_address: Optional[Dict[str, Any]] = None
+    hospital_contact: Optional[str] = None
+    symptoms: Optional[str] = None
+    diagnosis: Optional[str] = None
+    treatment: Optional[str] = None
+    medication_prescribed: Optional[List[Dict[str, Any]]] = None
+    temperature: Optional[float] = None
+    temperature_unit: str = "F"
+    blood_pressure: Optional[str] = None
+    pulse_rate: Optional[int] = None
+    respiratory_rate: Optional[int] = None
+    oxygen_level: Optional[float] = None
+    weight: Optional[float] = None
+    weight_unit: str = "kg"
+    height: Optional[float] = None
+    height_unit: str = "cm"
+    bmi: Optional[float] = None
+    status: str = "completed"
+    follow_up_date: Optional[date] = None
+    cost: Optional[float] = None
+    payment_status: str = "unpaid"
+    insurance_claim_number: Optional[str] = None
+    documents: Optional[List[Dict[str, Any]]] = None
+    notes: Optional[str] = None
+
+class HealthRecordCreate(HealthRecordBase):
+    pass
+
+class HealthRecordResponse(HealthRecordBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/health-records/", response_model=HealthRecordResponse, tags=["Health"])
+def create_health_record(record: HealthRecordCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_record = HealthRecord(**record.model_dump(), user_id=current_user.id)
+    db.add(db_record)
+    db.commit()
+    db.refresh(db_record)
+    return db_record
+
+@app.get("/api/health-records/", response_model=List[HealthRecordResponse], tags=["Health"])
+def read_health_records(skip: int = 0, limit: int = 100, record_type: Optional[str] = None, family_member_id: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(HealthRecord).filter(HealthRecord.user_id == current_user.id)
+    if record_type:
+        query = query.filter(HealthRecord.record_type == record_type)
+    if family_member_id:
+        query = query.filter(HealthRecord.family_member_id == family_member_id)
+    if status:
+        query = query.filter(HealthRecord.status == status)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/health-records/{record_id}", response_model=HealthRecordResponse, tags=["Health"])
+def read_health_record(record_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    record = db.query(HealthRecord).filter(HealthRecord.id == record_id, HealthRecord.user_id == current_user.id).first()
+    if not record:
+        raise HTTPException(status_code=404, detail="Health record not found")
+    return record
+
+@app.put("/api/health-records/{record_id}", response_model=HealthRecordResponse, tags=["Health"])
+def update_health_record(record_id: str, record: HealthRecordCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_record = db.query(HealthRecord).filter(HealthRecord.id == record_id, HealthRecord.user_id == current_user.id).first()
+    if not db_record:
+        raise HTTPException(status_code=404, detail="Health record not found")
+    for key, value in record.model_dump().items():
+        setattr(db_record, key, value)
+    db_record.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_record)
+    return db_record
+
+@app.delete("/api/health-records/{record_id}", tags=["Health"])
+def delete_health_record(record_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_record = db.query(HealthRecord).filter(HealthRecord.id == record_id, HealthRecord.user_id == current_user.id).first()
+    if not db_record:
+        raise HTTPException(status_code=404, detail="Health record not found")
+    db.delete(db_record)
+    db.commit()
+    return {"message": "Health record deleted successfully"}
+
+
+# ==================== Document ====================
+
+class DocumentBase(BaseModel):
+    name: str
+    document_type: str
+    category: str
+    description: Optional[str] = None
+    file_path: str
+    file_name: str
+    file_size: Optional[int] = None
+    file_size_unit: str = "B"
+    mime_type: Optional[str] = None
+    version: str = "1.0"
+    tags: Optional[List[str]] = None
+    issuer: Optional[str] = None
+    issue_date: Optional[date] = None
+    expiry_date: Optional[date] = None
+    reference_number: Optional[str] = None
+    location: Optional[str] = None
+    digital_location: Optional[str] = None
+    is_verified: bool = False
+    is_encrypted: bool = False
+    access_level: str = "private"
+    status: str = "active"
+    notes: Optional[str] = None
+
+class DocumentCreate(DocumentBase):
+    pass
+
+class DocumentResponse(DocumentBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/documents/", response_model=DocumentResponse, tags=["Documents"])
+def create_document(document: DocumentCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_document = Document(**document.model_dump(), user_id=current_user.id)
+    db.add(db_document)
+    db.commit()
+    db.refresh(db_document)
+    return db_document
+
+@app.get("/api/documents/", response_model=List[DocumentResponse], tags=["Documents"])
+def read_documents(skip: int = 0, limit: int = 100, document_type: Optional[str] = None, category: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Document).filter(Document.user_id == current_user.id)
+    if document_type:
+        query = query.filter(Document.document_type == document_type)
+    if category:
+        query = query.filter(Document.category == category)
+    if status:
+        query = query.filter(Document.status == status)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/documents/{document_id}", response_model=DocumentResponse, tags=["Documents"])
+def read_document(document_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    document = db.query(Document).filter(Document.id == document_id, Document.user_id == current_user.id).first()
+    if not document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return document
+
+@app.put("/api/documents/{document_id}", response_model=DocumentResponse, tags=["Documents"])
+def update_document(document_id: str, document: DocumentCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_document = db.query(Document).filter(Document.id == document_id, Document.user_id == current_user.id).first()
+    if not db_document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    for key, value in document.model_dump().items():
+        setattr(db_document, key, value)
+    db_document.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_document)
+    return db_document
+
+@app.delete("/api/documents/{document_id}", tags=["Documents"])
+def delete_document(document_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_document = db.query(Document).filter(Document.id == document_id, Document.user_id == current_user.id).first()
+    if not db_document:
+        raise HTTPException(status_code=404, detail="Document not found")
+    db.delete(db_document)
+    db.commit()
+    return {"message": "Document deleted successfully"}
+
+
+# ==================== Emergency Contact ====================
+
+class EmergencyContactBase(BaseModel):
+    name: str
+    relationship: str
+    phone: str
+    email: Optional[str] = None
+    address: Optional[str] = None
+    notes: Optional[str] = None
+
+class EmergencyContactCreate(EmergencyContactBase):
+    pass
+
+class EmergencyContactResponse(EmergencyContactBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/emergency-contacts/", response_model=EmergencyContactResponse, tags=["Emergency"])
+def create_emergency_contact(contact: EmergencyContactCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_contact = EmergencyContact(**contact.model_dump(), user_id=current_user.id)
+    db.add(db_contact)
+    db.commit()
+    db.refresh(db_contact)
+    return db_contact
+
+@app.get("/api/emergency-contacts/", response_model=List[EmergencyContactResponse], tags=["Emergency"])
+def read_emergency_contacts(skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    return db.query(EmergencyContact).filter(EmergencyContact.user_id == current_user.id).offset(skip).limit(limit).all()
+
+@app.get("/api/emergency-contacts/{contact_id}", response_model=EmergencyContactResponse, tags=["Emergency"])
+def read_emergency_contact(contact_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id, EmergencyContact.user_id == current_user.id).first()
+    if not contact:
+        raise HTTPException(status_code=404, detail="Emergency contact not found")
+    return contact
+
+@app.put("/api/emergency-contacts/{contact_id}", response_model=EmergencyContactResponse, tags=["Emergency"])
+def update_emergency_contact(contact_id: str, contact: EmergencyContactCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id, EmergencyContact.user_id == current_user.id).first()
+    if not db_contact:
+        raise HTTPException(status_code=404, detail="Emergency contact not found")
+    for key, value in contact.model_dump().items():
+        setattr(db_contact, key, value)
+    db_contact.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_contact)
+    return db_contact
+
+@app.delete("/api/emergency-contacts/{contact_id}", tags=["Emergency"])
+def delete_emergency_contact(contact_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_contact = db.query(EmergencyContact).filter(EmergencyContact.id == contact_id, EmergencyContact.user_id == current_user.id).first()
+    if not db_contact:
+        raise HTTPException(status_code=404, detail="Emergency contact not found")
+    db.delete(db_contact)
+    db.commit()
+    return {"message": "Emergency contact deleted successfully"}
