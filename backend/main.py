@@ -1293,3 +1293,233 @@ def delete_farm_activity(activity_id: str, current_user: User = Depends(get_curr
     db.delete(db_activity)
     db.commit()
     return {"message": "Farm activity deleted successfully"}
+
+
+# ==================== Asset ====================
+
+class AssetBase(BaseModel):
+    name: str
+    asset_type: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    purchase_date: Optional[date] = None
+    purchase_price: Optional[float] = None
+    current_value: Optional[float] = None
+    quantity: int = 1
+    location: Optional[str] = None
+    condition: str = "good"
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    serial_number: Optional[str] = None
+    warranty_expiry_date: Optional[date] = None
+    is_insured: bool = False
+    insurance_details: Optional[Dict[str, Any]] = None
+    documents: Optional[List[Dict[str, Any]]] = None
+    notes: Optional[str] = None
+
+class AssetCreate(AssetBase):
+    pass
+
+class AssetResponse(AssetBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/assets/", response_model=AssetResponse, tags=["Assets"])
+def create_asset(asset: AssetCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_asset = Asset(**asset.model_dump(), user_id=current_user.id)
+    db.add(db_asset)
+    db.commit()
+    db.refresh(db_asset)
+    return db_asset
+
+@app.get("/api/assets/", response_model=List[AssetResponse], tags=["Assets"])
+def read_assets(skip: int = 0, limit: int = 100, asset_type: Optional[str] = None, category: Optional[str] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Asset).filter(Asset.user_id == current_user.id)
+    if asset_type:
+        query = query.filter(Asset.asset_type == asset_type)
+    if category:
+        query = query.filter(Asset.category == category)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/assets/{asset_id}", response_model=AssetResponse, tags=["Assets"])
+def read_asset(asset_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    asset = db.query(Asset).filter(Asset.id == asset_id, Asset.user_id == current_user.id).first()
+    if not asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return asset
+
+@app.put("/api/assets/{asset_id}", response_model=AssetResponse, tags=["Assets"])
+def update_asset(asset_id: str, asset: AssetCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_asset = db.query(Asset).filter(Asset.id == asset_id, Asset.user_id == current_user.id).first()
+    if not db_asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    for key, value in asset.model_dump().items():
+        setattr(db_asset, key, value)
+    db_asset.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_asset)
+    return db_asset
+
+@app.delete("/api/assets/{asset_id}", tags=["Assets"])
+def delete_asset(asset_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_asset = db.query(Asset).filter(Asset.id == asset_id, Asset.user_id == current_user.id).first()
+    if not db_asset:
+        raise HTTPException(status_code=404, detail="Asset not found")
+    db.delete(db_asset)
+    db.commit()
+    return {"message": "Asset deleted successfully"}
+
+
+# ==================== Bank Account ====================
+
+class BankAccountBase(BaseModel):
+    name: str
+    account_type: str
+    bank_name: str
+    branch: Optional[str] = None
+    account_number: str
+    routing_number: Optional[str] = None
+    iban: Optional[str] = None
+    swift_code: Optional[str] = None
+    currency: str = "PKR"
+    current_balance: float = 0
+    opening_balance: Optional[float] = None
+    is_active: bool = True
+    is_primary: bool = False
+    notes: Optional[str] = None
+
+class BankAccountCreate(BankAccountBase):
+    pass
+
+class BankAccountResponse(BankAccountBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/bank-accounts/", response_model=BankAccountResponse, tags=["Bank Accounts"])
+def create_bank_account(account: BankAccountCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_account = BankAccount(**account.model_dump(), user_id=current_user.id)
+    db.add(db_account)
+    db.commit()
+    db.refresh(db_account)
+    return db_account
+
+@app.get("/api/bank-accounts/", response_model=List[BankAccountResponse], tags=["Bank Accounts"])
+def read_bank_accounts(skip: int = 0, limit: int = 100, is_active: Optional[bool] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(BankAccount).filter(BankAccount.user_id == current_user.id)
+    if is_active is not None:
+        query = query.filter(BankAccount.is_active == is_active)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/bank-accounts/{account_id}", response_model=BankAccountResponse, tags=["Bank Accounts"])
+def read_bank_account(account_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    account = db.query(BankAccount).filter(BankAccount.id == account_id, BankAccount.user_id == current_user.id).first()
+    if not account:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+    return account
+
+@app.put("/api/bank-accounts/{account_id}", response_model=BankAccountResponse, tags=["Bank Accounts"])
+def update_bank_account(account_id: str, account: BankAccountCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_account = db.query(BankAccount).filter(BankAccount.id == account_id, BankAccount.user_id == current_user.id).first()
+    if not db_account:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+    for key, value in account.model_dump().items():
+        setattr(db_account, key, value)
+    db_account.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_account)
+    return db_account
+
+@app.delete("/api/bank-accounts/{account_id}", tags=["Bank Accounts"])
+def delete_bank_account(account_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_account = db.query(BankAccount).filter(BankAccount.id == account_id, BankAccount.user_id == current_user.id).first()
+    if not db_account:
+        raise HTTPException(status_code=404, detail="Bank account not found")
+    db.delete(db_account)
+    db.commit()
+    return {"message": "Bank account deleted successfully"}
+
+
+# ==================== Calendar Event ====================
+
+class CalendarEventBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    event_type: str
+    start_date: date
+    end_date: Optional[date] = None
+    start_time: Optional[str] = None
+    end_time: Optional[str] = None
+    location: Optional[str] = None
+    attendees: Optional[List[str]] = None
+    reminder_date: Optional[date] = None
+    reminder_time: Optional[str] = None
+    is_recurring: bool = False
+    recurring_frequency: Optional[str] = None
+    color: Optional[str] = None
+    notes: Optional[str] = None
+
+class CalendarEventCreate(CalendarEventBase):
+    pass
+
+class CalendarEventResponse(CalendarEventBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/calendar-events/", response_model=CalendarEventResponse, tags=["Calendar"])
+def create_calendar_event(event: CalendarEventCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_event = CalendarEvent(**event.model_dump(), user_id=current_user.id)
+    db.add(db_event)
+    db.commit()
+    db.refresh(db_event)
+    return db_event
+
+@app.get("/api/calendar-events/", response_model=List[CalendarEventResponse], tags=["Calendar"])
+def read_calendar_events(skip: int = 0, limit: int = 100, start_date: Optional[date] = None, end_date: Optional[date] = None, event_type: Optional[str] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(CalendarEvent).filter(CalendarEvent.user_id == current_user.id)
+    if start_date:
+        query = query.filter(CalendarEvent.start_date >= start_date)
+    if end_date:
+        query = query.filter(CalendarEvent.end_date <= end_date)
+    if event_type:
+        query = query.filter(CalendarEvent.event_type == event_type)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/calendar-events/{event_id}", response_model=CalendarEventResponse, tags=["Calendar"])
+def read_calendar_event(event_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id, CalendarEvent.user_id == current_user.id).first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Calendar event not found")
+    return event
+
+@app.put("/api/calendar-events/{event_id}", response_model=CalendarEventResponse, tags=["Calendar"])
+def update_calendar_event(event_id: str, event: CalendarEventCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id, CalendarEvent.user_id == current_user.id).first()
+    if not db_event:
+        raise HTTPException(status_code=404, detail="Calendar event not found")
+    for key, value in event.model_dump().items():
+        setattr(db_event, key, value)
+    db_event.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_event)
+    return db_event
+
+@app.delete("/api/calendar-events/{event_id}", tags=["Calendar"])
+def delete_calendar_event(event_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_event = db.query(CalendarEvent).filter(CalendarEvent.id == event_id, CalendarEvent.user_id == current_user.id).first()
+    if not db_event:
+        raise HTTPException(status_code=404, detail="Calendar event not found")
+    db.delete(db_event)
+    db.commit()
+    return {"message": "Calendar event deleted successfully"}
