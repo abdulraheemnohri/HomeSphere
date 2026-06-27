@@ -578,3 +578,258 @@ def delete_loan(loan_id: str, current_user: User = Depends(get_current_active_us
     db.delete(db_loan)
     db.commit()
     return {"message": "Loan deleted successfully"}
+
+
+# ==================== Property ====================
+
+class PropertyBase(BaseModel):
+    name: str
+    property_type: str
+    address: Dict[str, Any]
+    purchase_date: Optional[date] = None
+    purchase_price: Optional[float] = None
+    current_value: Optional[float] = None
+    area: Optional[float] = None
+    area_unit: str = "sq ft"
+    bedrooms: Optional[int] = None
+    bathrooms: Optional[int] = None
+    floors: Optional[int] = None
+    has_garage: bool = False
+    has_garden: bool = False
+    has_swimming_pool: bool = False
+    is_rented: bool = False
+    monthly_rent: Optional[float] = None
+    tenant_name: Optional[str] = None
+    tenant_contact: Optional[str] = None
+    lease_start_date: Optional[date] = None
+    lease_end_date: Optional[date] = None
+    is_active: bool = True
+    documents: Optional[List[Dict[str, Any]]] = None
+    notes: Optional[str] = None
+
+class PropertyCreate(PropertyBase):
+    pass
+
+class PropertyResponse(PropertyBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/properties/", response_model=PropertyResponse, tags=["Properties"])
+def create_property(property: PropertyCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_property = Property(**property.model_dump(), user_id=current_user.id)
+    db.add(db_property)
+    db.commit()
+    db.refresh(db_property)
+    return db_property
+
+@app.get("/api/properties/", response_model=List[PropertyResponse], tags=["Properties"])
+def read_properties(skip: int = 0, limit: int = 100, property_type: Optional[str] = None, is_active: Optional[bool] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Property).filter(Property.user_id == current_user.id)
+    if property_type:
+        query = query.filter(Property.property_type == property_type)
+    if is_active is not None:
+        query = query.filter(Property.is_active == is_active)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/properties/{property_id}", response_model=PropertyResponse, tags=["Properties"])
+def read_property(property_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    property = db.query(Property).filter(Property.id == property_id, Property.user_id == current_user.id).first()
+    if not property:
+        raise HTTPException(status_code=404, detail="Property not found")
+    return property
+
+@app.put("/api/properties/{property_id}", response_model=PropertyResponse, tags=["Properties"])
+def update_property(property_id: str, property: PropertyCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_property = db.query(Property).filter(Property.id == property_id, Property.user_id == current_user.id).first()
+    if not db_property:
+        raise HTTPException(status_code=404, detail="Property not found")
+    for key, value in property.model_dump().items():
+        setattr(db_property, key, value)
+    db_property.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_property)
+    return db_property
+
+@app.delete("/api/properties/{property_id}", tags=["Properties"])
+def delete_property(property_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_property = db.query(Property).filter(Property.id == property_id, Property.user_id == current_user.id).first()
+    if not db_property:
+        raise HTTPException(status_code=404, detail="Property not found")
+    db.delete(db_property)
+    db.commit()
+    return {"message": "Property deleted successfully"}
+
+
+# ==================== Vehicle ====================
+
+class VehicleBase(BaseModel):
+    name: str
+    vehicle_type: str
+    make: Optional[str] = None
+    model: Optional[str] = None
+    year: Optional[int] = None
+    registration_number: Optional[str] = None
+    engine_number: Optional[str] = None
+    chasis_number: Optional[str] = None
+    color: Optional[str] = None
+    mileage: float = 0
+    mileage_unit: str = "km"
+    purchase_date: Optional[date] = None
+    purchase_price: Optional[float] = None
+    current_value: Optional[float] = None
+    fuel_type: Optional[str] = None
+    transmission: Optional[str] = None
+    insurance_company: Optional[str] = None
+    insurance_policy_number: Optional[str] = None
+    insurance_expiry_date: Optional[date] = None
+    last_service_date: Optional[date] = None
+    next_service_date: Optional[date] = None
+    service_reminder_km: int = 5000
+    is_active: bool = True
+    documents: Optional[List[Dict[str, Any]]] = None
+    notes: Optional[str] = None
+
+class VehicleCreate(VehicleBase):
+    pass
+
+class VehicleResponse(VehicleBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/vehicles/", response_model=VehicleResponse, tags=["Properties"])
+def create_vehicle(vehicle: VehicleCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_vehicle = Vehicle(**vehicle.model_dump(), user_id=current_user.id)
+    db.add(db_vehicle)
+    db.commit()
+    db.refresh(db_vehicle)
+    return db_vehicle
+
+@app.get("/api/vehicles/", response_model=List[VehicleResponse], tags=["Properties"])
+def read_vehicles(skip: int = 0, limit: int = 100, vehicle_type: Optional[str] = None, is_active: Optional[bool] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Vehicle).filter(Vehicle.user_id == current_user.id)
+    if vehicle_type:
+        query = query.filter(Vehicle.vehicle_type == vehicle_type)
+    if is_active is not None:
+        query = query.filter(Vehicle.is_active == is_active)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/vehicles/{vehicle_id}", response_model=VehicleResponse, tags=["Properties"])
+def read_vehicle(vehicle_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id, Vehicle.user_id == current_user.id).first()
+    if not vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    return vehicle
+
+@app.put("/api/vehicles/{vehicle_id}", response_model=VehicleResponse, tags=["Properties"])
+def update_vehicle(vehicle_id: str, vehicle: VehicleCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id, Vehicle.user_id == current_user.id).first()
+    if not db_vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    for key, value in vehicle.model_dump().items():
+        setattr(db_vehicle, key, value)
+    db_vehicle.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_vehicle)
+    return db_vehicle
+
+@app.delete("/api/vehicles/{vehicle_id}", tags=["Properties"])
+def delete_vehicle(vehicle_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_vehicle = db.query(Vehicle).filter(Vehicle.id == vehicle_id, Vehicle.user_id == current_user.id).first()
+    if not db_vehicle:
+        raise HTTPException(status_code=404, detail="Vehicle not found")
+    db.delete(db_vehicle)
+    db.commit()
+    return {"message": "Vehicle deleted successfully"}
+
+
+# ==================== Animal ====================
+
+class AnimalBase(BaseModel):
+    name: str
+    animal_type: str
+    breed: Optional[str] = None
+    gender: str = "unknown"
+    date_of_birth: Optional[date] = None
+    age: Optional[int] = None
+    age_unit: str = "years"
+    color: Optional[str] = None
+    weight: Optional[float] = None
+    weight_unit: str = "kg"
+    height: Optional[float] = None
+    height_unit: str = "cm"
+    health_status: str = "good"
+    vaccination_records: Optional[List[Dict[str, Any]]] = None
+    medical_history: Optional[List[Dict[str, Any]]] = None
+    purchase_date: Optional[date] = None
+    purchase_price: Optional[float] = None
+    current_value: Optional[float] = None
+    is_active: bool = True
+    is_sterilized: bool = False
+    microchip_number: Optional[str] = None
+    identification_mark: Optional[str] = None
+    documents: Optional[List[Dict[str, Any]]] = None
+    notes: Optional[str] = None
+
+class AnimalCreate(AnimalBase):
+    pass
+
+class AnimalResponse(AnimalBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/animals/", response_model=AnimalResponse, tags=["Properties"])
+def create_animal(animal: AnimalCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_animal = Animal(**animal.model_dump(), user_id=current_user.id)
+    db.add(db_animal)
+    db.commit()
+    db.refresh(db_animal)
+    return db_animal
+
+@app.get("/api/animals/", response_model=List[AnimalResponse], tags=["Properties"])
+def read_animals(skip: int = 0, limit: int = 100, animal_type: Optional[str] = None, is_active: Optional[bool] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Animal).filter(Animal.user_id == current_user.id)
+    if animal_type:
+        query = query.filter(Animal.animal_type == animal_type)
+    if is_active is not None:
+        query = query.filter(Animal.is_active == is_active)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/animals/{animal_id}", response_model=AnimalResponse, tags=["Properties"])
+def read_animal(animal_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    animal = db.query(Animal).filter(Animal.id == animal_id, Animal.user_id == current_user.id).first()
+    if not animal:
+        raise HTTPException(status_code=404, detail="Animal not found")
+    return animal
+
+@app.put("/api/animals/{animal_id}", response_model=AnimalResponse, tags=["Properties"])
+def update_animal(animal_id: str, animal: AnimalCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_animal = db.query(Animal).filter(Animal.id == animal_id, Animal.user_id == current_user.id).first()
+    if not db_animal:
+        raise HTTPException(status_code=404, detail="Animal not found")
+    for key, value in animal.model_dump().items():
+        setattr(db_animal, key, value)
+    db_animal.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_animal)
+    return db_animal
+
+@app.delete("/api/animals/{animal_id}", tags=["Properties"])
+def delete_animal(animal_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_animal = db.query(Animal).filter(Animal.id == animal_id, Animal.user_id == current_user.id).first()
+    if not db_animal:
+        raise HTTPException(status_code=404, detail="Animal not found")
+    db.delete(db_animal)
+    db.commit()
+    return {"message": "Animal deleted successfully"}
