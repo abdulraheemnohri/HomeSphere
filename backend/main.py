@@ -1523,3 +1523,66 @@ def delete_calendar_event(event_id: str, current_user: User = Depends(get_curren
     db.delete(db_event)
     db.commit()
     return {"message": "Calendar event deleted successfully"}
+
+
+# ==================== Dashboard Stats ====================
+
+@app.get("/api/dashboard/stats", tags=["Dashboard"])
+def get_dashboard_stats(current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    """Get dashboard statistics"""
+    # Total income
+    total_income = db.query(func.sum(Income.amount)).filter(Income.user_id == current_user.id).scalar() or 0
+    # Total expenses
+    total_expenses = db.query(func.sum(Expense.amount)).filter(Expense.user_id == current_user.id).scalar() or 0
+    # Total assets value
+    total_assets = db.query(func.sum(Asset.current_value)).filter(Asset.user_id == current_user.id).scalar() or 0
+    # Total properties
+    total_properties = db.query(Property).filter(Property.user_id == current_user.id).count()
+    # Total vehicles
+    total_vehicles = db.query(Vehicle).filter(Vehicle.user_id == current_user.id).count()
+    # Total family members
+    total_family = db.query(FamilyMember).filter(FamilyMember.user_id == current_user.id).count()
+    # Recent transactions
+    recent_incomes = db.query(Income).filter(Income.user_id == current_user.id).order_by(Income.date.desc()).limit(5).all()
+    recent_expenses = db.query(Expense).filter(Expense.user_id == current_user.id).order_by(Expense.date.desc()).limit(5).all()
+    # Budget status
+    active_budgets = db.query(Budget).filter(Budget.user_id == current_user.id, Budget.is_active == True).all()
+    budget_stats = []
+    for budget in active_budgets:
+        percentage = (budget.current_spent / budget.allocated_amount * 100) if budget.allocated_amount > 0 else 0
+        budget_stats.append({"name": budget.name, "allocated": budget.allocated_amount, "spent": budget.current_spent, "percentage": round(percentage, 2)})
+    # Upcoming bills
+    upcoming_bills = db.query(Bill).filter(Bill.user_id == current_user.id, Bill.status == "pending", Bill.due_date >= date.today()).order_by(Bill.due_date).limit(5).all()
+    # Upcoming events
+    upcoming_events = db.query(CalendarEvent).filter(CalendarEvent.user_id == current_user.id, CalendarEvent.start_date >= date.today()).order_by(CalendarEvent.start_date).limit(5).all()
+    # Total bank balance
+    total_balance = db.query(func.sum(BankAccount.current_balance)).filter(BankAccount.user_id == current_user.id).scalar() or 0
+    
+    return {
+        "finance": {
+            "total_income": float(total_income),
+            "total_expenses": float(total_expenses),
+            "net_balance": float(total_income - total_expenses),
+            "total_bank_balance": float(total_balance)
+        },
+        "assets": {
+            "total_assets_value": float(total_assets),
+            "total_properties": total_properties,
+            "total_vehicles": total_vehicles
+        },
+        "family": {"total_family_members": total_family},
+        "recent_transactions": {
+            "incomes": [{"id": i.id, "amount": i.amount, "date": i.date.isoformat(), "category": i.category} for i in recent_incomes],
+            "expenses": [{"id": e.id, "amount": e.amount, "date": e.date.isoformat(), "category": e.category} for e in recent_expenses]
+        },
+        "budgets": budget_stats,
+        "upcoming_bills": [{"id": b.id, "name": b.name, "amount": b.amount, "due_date": b.due_date.isoformat()} for b in upcoming_bills],
+        "upcoming_events": [{"id": e.id, "title": e.title, "start_date": e.start_date.isoformat()} for e in upcoming_events]
+    }
+
+
+# ==================== Run Server ====================
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
