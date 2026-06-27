@@ -1075,3 +1075,221 @@ def delete_emergency_contact(contact_id: str, current_user: User = Depends(get_c
     db.delete(db_contact)
     db.commit()
     return {"message": "Emergency contact deleted successfully"}
+
+
+# ==================== Shopping List ====================
+
+class ShoppingListBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    items: Optional[List[Dict[str, Any]]] = None
+    total_amount: Optional[float] = None
+    status: str = "pending"
+    priority: Optional[str] = None
+    due_date: Optional[date] = None
+    notes: Optional[str] = None
+
+class ShoppingListCreate(ShoppingListBase):
+    pass
+
+class ShoppingListResponse(ShoppingListBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/shopping-lists/", response_model=ShoppingListResponse, tags=["Shopping"])
+def create_shopping_list(shopping_list: ShoppingListCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_shopping_list = ShoppingList(**shopping_list.model_dump(), user_id=current_user.id)
+    db.add(db_shopping_list)
+    db.commit()
+    db.refresh(db_shopping_list)
+    return db_shopping_list
+
+@app.get("/api/shopping-lists/", response_model=List[ShoppingListResponse], tags=["Shopping"])
+def read_shopping_lists(skip: int = 0, limit: int = 100, status: Optional[str] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(ShoppingList).filter(ShoppingList.user_id == current_user.id)
+    if status:
+        query = query.filter(ShoppingList.status == status)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/shopping-lists/{list_id}", response_model=ShoppingListResponse, tags=["Shopping"])
+def read_shopping_list(list_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    shopping_list = db.query(ShoppingList).filter(ShoppingList.id == list_id, ShoppingList.user_id == current_user.id).first()
+    if not shopping_list:
+        raise HTTPException(status_code=404, detail="Shopping list not found")
+    return shopping_list
+
+@app.put("/api/shopping-lists/{list_id}", response_model=ShoppingListResponse, tags=["Shopping"])
+def update_shopping_list(list_id: str, shopping_list: ShoppingListCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_shopping_list = db.query(ShoppingList).filter(ShoppingList.id == list_id, ShoppingList.user_id == current_user.id).first()
+    if not db_shopping_list:
+        raise HTTPException(status_code=404, detail="Shopping list not found")
+    for key, value in shopping_list.model_dump().items():
+        setattr(db_shopping_list, key, value)
+    db_shopping_list.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_shopping_list)
+    return db_shopping_list
+
+@app.delete("/api/shopping-lists/{list_id}", tags=["Shopping"])
+def delete_shopping_list(list_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_shopping_list = db.query(ShoppingList).filter(ShoppingList.id == list_id, ShoppingList.user_id == current_user.id).first()
+    if not db_shopping_list:
+        raise HTTPException(status_code=404, detail="Shopping list not found")
+    db.delete(db_shopping_list)
+    db.commit()
+    return {"message": "Shopping list deleted successfully"}
+
+
+# ==================== Task ====================
+
+class TaskBase(BaseModel):
+    title: str
+    description: Optional[str] = None
+    category: Optional[str] = None
+    priority: str = "medium"
+    status: str = "pending"
+    due_date: Optional[date] = None
+    due_time: Optional[str] = None
+    reminder_date: Optional[date] = None
+    reminder_time: Optional[str] = None
+    assigned_to: Optional[str] = None
+    is_recurring: bool = False
+    recurring_frequency: Optional[str] = None
+    notes: Optional[str] = None
+
+class TaskCreate(TaskBase):
+    pass
+
+class TaskResponse(TaskBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/tasks/", response_model=TaskResponse, tags=["Tasks"])
+def create_task(task: TaskCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_task = Task(**task.model_dump(), user_id=current_user.id)
+    db.add(db_task)
+    db.commit()
+    db.refresh(db_task)
+    return db_task
+
+@app.get("/api/tasks/", response_model=List[TaskResponse], tags=["Tasks"])
+def read_tasks(skip: int = 0, limit: int = 100, status: Optional[str] = None, priority: Optional[str] = None, category: Optional[str] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Task).filter(Task.user_id == current_user.id)
+    if status:
+        query = query.filter(Task.status == status)
+    if priority:
+        query = query.filter(Task.priority == priority)
+    if category:
+        query = query.filter(Task.category == category)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/tasks/{task_id}", response_model=TaskResponse, tags=["Tasks"])
+def read_task(task_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return task
+
+@app.put("/api/tasks/{task_id}", response_model=TaskResponse, tags=["Tasks"])
+def update_task(task_id: str, task: TaskCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    for key, value in task.model_dump().items():
+        setattr(db_task, key, value)
+    db_task.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_task)
+    return db_task
+
+@app.delete("/api/tasks/{task_id}", tags=["Tasks"])
+def delete_task(task_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_task = db.query(Task).filter(Task.id == task_id, Task.user_id == current_user.id).first()
+    if not db_task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    db.delete(db_task)
+    db.commit()
+    return {"message": "Task deleted successfully"}
+
+
+# ==================== Farm Activity ====================
+
+class FarmActivityBase(BaseModel):
+    name: str
+    activity_type: str
+    description: Optional[str] = None
+    area: Optional[float] = None
+    area_unit: str = "sq ft"
+    crop_type: Optional[str] = None
+    quantity: Optional[float] = None
+    quantity_unit: Optional[str] = None
+    status: str = "planned"
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    cost: Optional[float] = None
+    revenue: Optional[float] = None
+    notes: Optional[str] = None
+
+class FarmActivityCreate(FarmActivityBase):
+    pass
+
+class FarmActivityResponse(FarmActivityBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/farm-activities/", response_model=FarmActivityResponse, tags=["Farm"])
+def create_farm_activity(activity: FarmActivityCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_activity = FarmActivity(**activity.model_dump(), user_id=current_user.id)
+    db.add(db_activity)
+    db.commit()
+    db.refresh(db_activity)
+    return db_activity
+
+@app.get("/api/farm-activities/", response_model=List[FarmActivityResponse], tags=["Farm"])
+def read_farm_activities(skip: int = 0, limit: int = 100, activity_type: Optional[str] = None, status: Optional[str] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(FarmActivity).filter(FarmActivity.user_id == current_user.id)
+    if activity_type:
+        query = query.filter(FarmActivity.activity_type == activity_type)
+    if status:
+        query = query.filter(FarmActivity.status == status)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/farm-activities/{activity_id}", response_model=FarmActivityResponse, tags=["Farm"])
+def read_farm_activity(activity_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    activity = db.query(FarmActivity).filter(FarmActivity.id == activity_id, FarmActivity.user_id == current_user.id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Farm activity not found")
+    return activity
+
+@app.put("/api/farm-activities/{activity_id}", response_model=FarmActivityResponse, tags=["Farm"])
+def update_farm_activity(activity_id: str, activity: FarmActivityCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_activity = db.query(FarmActivity).filter(FarmActivity.id == activity_id, FarmActivity.user_id == current_user.id).first()
+    if not db_activity:
+        raise HTTPException(status_code=404, detail="Farm activity not found")
+    for key, value in activity.model_dump().items():
+        setattr(db_activity, key, value)
+    db_activity.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_activity)
+    return db_activity
+
+@app.delete("/api/farm-activities/{activity_id}", tags=["Farm"])
+def delete_farm_activity(activity_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_activity = db.query(FarmActivity).filter(FarmActivity.id == activity_id, FarmActivity.user_id == current_user.id).first()
+    if not db_activity:
+        raise HTTPException(status_code=404, detail="Farm activity not found")
+    db.delete(db_activity)
+    db.commit()
+    return {"message": "Farm activity deleted successfully"}
