@@ -9,6 +9,9 @@ export { default as useAuth, useAuthHook } from './useAuth';
 // Theme
 export { default as useTheme, useTheme as useThemeHook, toggleTheme, getCurrentTheme } from './useTheme';
 
+// Dashboard
+export { default as useDashboard, useDashboardHook } from './useDashboard';
+
 // Family
 export { default as useFamily, useFamilyHook } from './useFamily';
 
