@@ -366,3 +366,215 @@ def delete_expense(expense_id: str, current_user: User = Depends(get_current_act
     db.delete(db_expense)
     db.commit()
     return {"message": "Expense deleted successfully"}
+
+# ==================== Budget ====================
+
+class BudgetBase(BaseModel):
+    name: str
+    category: str
+    allocated_amount: float
+    current_spent: float = 0
+    start_date: date
+    end_date: date
+    is_active: bool = True
+    notes: Optional[str] = None
+
+class BudgetCreate(BudgetBase):
+    pass
+
+class BudgetResponse(BudgetBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/budgets/", response_model=BudgetResponse, tags=["Finance"])
+def create_budget(budget: BudgetCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_budget = Budget(**budget.model_dump(), user_id=current_user.id)
+    db.add(db_budget)
+    db.commit()
+    db.refresh(db_budget)
+    return db_budget
+
+@app.get("/api/budgets/", response_model=List[BudgetResponse], tags=["Finance"])
+def read_budgets(skip: int = 0, limit: int = 100, is_active: Optional[bool] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Budget).filter(Budget.user_id == current_user.id)
+    if is_active is not None:
+        query = query.filter(Budget.is_active == is_active)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/budgets/{budget_id}", response_model=BudgetResponse, tags=["Finance"])
+def read_budget(budget_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    budget = db.query(Budget).filter(Budget.id == budget_id, Budget.user_id == current_user.id).first()
+    if not budget:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    return budget
+
+@app.put("/api/budgets/{budget_id}", response_model=BudgetResponse, tags=["Finance"])
+def update_budget(budget_id: str, budget: BudgetCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_budget = db.query(Budget).filter(Budget.id == budget_id, Budget.user_id == current_user.id).first()
+    if not db_budget:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    for key, value in budget.model_dump().items():
+        setattr(db_budget, key, value)
+    db_budget.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_budget)
+    return db_budget
+
+@app.delete("/api/budgets/{budget_id}", tags=["Finance"])
+def delete_budget(budget_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_budget = db.query(Budget).filter(Budget.id == budget_id, Budget.user_id == current_user.id).first()
+    if not db_budget:
+        raise HTTPException(status_code=404, detail="Budget not found")
+    db.delete(db_budget)
+    db.commit()
+    return {"message": "Budget deleted successfully"}
+
+
+# ==================== Bill ====================
+
+class BillBase(BaseModel):
+    name: str
+    category: str
+    amount: float
+    due_date: date
+    issue_date: Optional[date] = None
+    payment_date: Optional[date] = None
+    status: str = "pending"
+    vendor: Optional[str] = None
+    account_number: Optional[str] = None
+    payment_method: Optional[str] = None
+    reference_number: Optional[str] = None
+    notes: Optional[str] = None
+    is_recurring: bool = False
+    recurring_frequency: Optional[str] = None
+
+class BillCreate(BillBase):
+    pass
+
+class BillResponse(BillBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/bills/", response_model=BillResponse, tags=["Finance"])
+def create_bill(bill: BillCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_bill = Bill(**bill.model_dump(), user_id=current_user.id)
+    db.add(db_bill)
+    db.commit()
+    db.refresh(db_bill)
+    return db_bill
+
+@app.get("/api/bills/", response_model=List[BillResponse], tags=["Finance"])
+def read_bills(skip: int = 0, limit: int = 100, status: Optional[str] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Bill).filter(Bill.user_id == current_user.id)
+    if status:
+        query = query.filter(Bill.status == status)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/bills/{bill_id}", response_model=BillResponse, tags=["Finance"])
+def read_bill(bill_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    bill = db.query(Bill).filter(Bill.id == bill_id, Bill.user_id == current_user.id).first()
+    if not bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    return bill
+
+@app.put("/api/bills/{bill_id}", response_model=BillResponse, tags=["Finance"])
+def update_bill(bill_id: str, bill: BillCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_bill = db.query(Bill).filter(Bill.id == bill_id, Bill.user_id == current_user.id).first()
+    if not db_bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    for key, value in bill.model_dump().items():
+        setattr(db_bill, key, value)
+    db_bill.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_bill)
+    return db_bill
+
+@app.delete("/api/bills/{bill_id}", tags=["Finance"])
+def delete_bill(bill_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_bill = db.query(Bill).filter(Bill.id == bill_id, Bill.user_id == current_user.id).first()
+    if not db_bill:
+        raise HTTPException(status_code=404, detail="Bill not found")
+    db.delete(db_bill)
+    db.commit()
+    return {"message": "Bill deleted successfully"}
+
+
+# ==================== Loan ====================
+
+class LoanBase(BaseModel):
+    name: str
+    loan_type: str
+    amount: float
+    interest_rate: float = 0
+    start_date: date
+    end_date: Optional[date] = None
+    status: str = "active"
+    lender: str
+    lender_contact: Optional[str] = None
+    next_payment_amount: Optional[float] = None
+    next_payment_date: Optional[date] = None
+    total_paid: float = 0
+    collateral: Optional[Dict[str, Any]] = None
+    notes: Optional[str] = None
+
+class LoanCreate(LoanBase):
+    pass
+
+class LoanResponse(LoanBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/loans/", response_model=LoanResponse, tags=["Finance"])
+def create_loan(loan: LoanCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_loan = Loan(**loan.model_dump(), user_id=current_user.id)
+    db.add(db_loan)
+    db.commit()
+    db.refresh(db_loan)
+    return db_loan
+
+@app.get("/api/loans/", response_model=List[LoanResponse], tags=["Finance"])
+def read_loans(skip: int = 0, limit: int = 100, status: Optional[str] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Loan).filter(Loan.user_id == current_user.id)
+    if status:
+        query = query.filter(Loan.status == status)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/loans/{loan_id}", response_model=LoanResponse, tags=["Finance"])
+def read_loan(loan_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    loan = db.query(Loan).filter(Loan.id == loan_id, Loan.user_id == current_user.id).first()
+    if not loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    return loan
+
+@app.put("/api/loans/{loan_id}", response_model=LoanResponse, tags=["Finance"])
+def update_loan(loan_id: str, loan: LoanCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_loan = db.query(Loan).filter(Loan.id == loan_id, Loan.user_id == current_user.id).first()
+    if not db_loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    for key, value in loan.model_dump().items():
+        setattr(db_loan, key, value)
+    db_loan.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_loan)
+    return db_loan
+
+@app.delete("/api/loans/{loan_id}", tags=["Finance"])
+def delete_loan(loan_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_loan = db.query(Loan).filter(Loan.id == loan_id, Loan.user_id == current_user.id).first()
+    if not db_loan:
+        raise HTTPException(status_code=404, detail="Loan not found")
+    db.delete(db_loan)
+    db.commit()
+    return {"message": "Loan deleted successfully"}
