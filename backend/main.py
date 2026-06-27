@@ -81,7 +81,6 @@ class UserResponse(BaseModel):
     phone: Optional[str] = None
     is_active: bool
     created_at: datetime
-    
     class Config:
         from_attributes = True
 
@@ -118,25 +117,14 @@ def register_user(user: UserCreate, db=Depends(get_db)):
     return db_user
 
 @app.post("/api/auth/token", response_model=Token, tags=["Authentication"])
-def login_for_access_token(
-    form_data: OAuth2PasswordRequestForm = Depends(),
-    db=Depends(get_db)
-):
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db=Depends(get_db)):
     """Get access token for user"""
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password", headers={"WWW-Authenticate": "Bearer"})
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
     if not pwd_context.verify(form_data.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password", headers={"WWW-Authenticate": "Bearer"})
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -145,11 +133,7 @@ def login_with_pin(pin: str, username: str, db=Depends(get_db)):
     """Login using PIN code"""
     user = db.query(User).filter(User.username == username).first()
     if not user or user.pin_code != pin:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or PIN",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or PIN", headers={"WWW-Authenticate": "Bearer"})
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -167,14 +151,10 @@ def read_root():
 
 @app.get("/api/health", tags=["Root"])
 def health_check():
-    return {
-        "status": "healthy",
-        "version": "1.0.0",
-        "timestamp": datetime.utcnow().isoformat()
-    }
+    return {"status": "healthy", "version": "1.0.0", "timestamp": datetime.utcnow().isoformat()}
 
 
-# ==================== Family Members Endpoints ====================
+# ==================== Family Members ====================
 
 class FamilyMemberBase(BaseModel):
     first_name: str
@@ -241,3 +221,148 @@ def delete_family_member(member_id: str, current_user: User = Depends(get_curren
     db.delete(db_member)
     db.commit()
     return {"message": "Family member deleted successfully"}
+
+
+# ==================== Income ====================
+
+class IncomeBase(BaseModel):
+    amount: float
+    date: date
+    category: str
+    source: Optional[str] = None
+    payment_method: str
+    reference_number: Optional[str] = None
+    notes: Optional[str] = None
+    is_recurring: bool = False
+    recurring_frequency: Optional[str] = None
+
+class IncomeCreate(IncomeBase):
+    pass
+
+class IncomeResponse(IncomeBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/incomes/", response_model=IncomeResponse, tags=["Finance"])
+def create_income(income: IncomeCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_income = Income(**income.model_dump(), user_id=current_user.id)
+    db.add(db_income)
+    db.commit()
+    db.refresh(db_income)
+    return db_income
+
+@app.get("/api/incomes/", response_model=List[IncomeResponse], tags=["Finance"])
+def read_incomes(skip: int = 0, limit: int = 100, category: Optional[str] = None, start_date: Optional[date] = None, end_date: Optional[date] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Income).filter(Income.user_id == current_user.id)
+    if category:
+        query = query.filter(Income.category == category)
+    if start_date:
+        query = query.filter(Income.date >= start_date)
+    if end_date:
+        query = query.filter(Income.date <= end_date)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/incomes/{income_id}", response_model=IncomeResponse, tags=["Finance"])
+def read_income(income_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    income = db.query(Income).filter(Income.id == income_id, Income.user_id == current_user.id).first()
+    if not income:
+        raise HTTPException(status_code=404, detail="Income not found")
+    return income
+
+@app.put("/api/incomes/{income_id}", response_model=IncomeResponse, tags=["Finance"])
+def update_income(income_id: str, income: IncomeCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_income = db.query(Income).filter(Income.id == income_id, Income.user_id == current_user.id).first()
+    if not db_income:
+        raise HTTPException(status_code=404, detail="Income not found")
+    for key, value in income.model_dump().items():
+        setattr(db_income, key, value)
+    db_income.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_income)
+    return db_income
+
+@app.delete("/api/incomes/{income_id}", tags=["Finance"])
+def delete_income(income_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_income = db.query(Income).filter(Income.id == income_id, Income.user_id == current_user.id).first()
+    if not db_income:
+        raise HTTPException(status_code=404, detail="Income not found")
+    db.delete(db_income)
+    db.commit()
+    return {"message": "Income deleted successfully"}
+
+
+# ==================== Expense ====================
+
+class ExpenseBase(BaseModel):
+    amount: float
+    date: date
+    category: str
+    subcategory: Optional[str] = None
+    payment_method: str
+    reference_number: Optional[str] = None
+    payee: Optional[str] = None
+    notes: Optional[str] = None
+    is_recurring: bool = False
+    recurring_frequency: Optional[str] = None
+
+class ExpenseCreate(ExpenseBase):
+    pass
+
+class ExpenseResponse(ExpenseBase):
+    id: str
+    user_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/expenses/", response_model=ExpenseResponse, tags=["Finance"])
+def create_expense(expense: ExpenseCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_expense = Expense(**expense.model_dump(), user_id=current_user.id)
+    db.add(db_expense)
+    db.commit()
+    db.refresh(db_expense)
+    return db_expense
+
+@app.get("/api/expenses/", response_model=List[ExpenseResponse], tags=["Finance"])
+def read_expenses(skip: int = 0, limit: int = 100, category: Optional[str] = None, start_date: Optional[date] = None, end_date: Optional[date] = None, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Expense).filter(Expense.user_id == current_user.id)
+    if category:
+        query = query.filter(Expense.category == category)
+    if start_date:
+        query = query.filter(Expense.date >= start_date)
+    if end_date:
+        query = query.filter(Expense.date <= end_date)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/expenses/{expense_id}", response_model=ExpenseResponse, tags=["Finance"])
+def read_expense(expense_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    expense = db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == current_user.id).first()
+    if not expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    return expense
+
+@app.put("/api/expenses/{expense_id}", response_model=ExpenseResponse, tags=["Finance"])
+def update_expense(expense_id: str, expense: ExpenseCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_expense = db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == current_user.id).first()
+    if not db_expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    for key, value in expense.model_dump().items():
+        setattr(db_expense, key, value)
+    db_expense.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_expense)
+    return db_expense
+
+@app.delete("/api/expenses/{expense_id}", tags=["Finance"])
+def delete_expense(expense_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_expense = db.query(Expense).filter(Expense.id == expense_id, Expense.user_id == current_user.id).first()
+    if not db_expense:
+        raise HTTPException(status_code=404, detail="Expense not found")
+    db.delete(db_expense)
+    db.commit()
+    return {"message": "Expense deleted successfully"}
