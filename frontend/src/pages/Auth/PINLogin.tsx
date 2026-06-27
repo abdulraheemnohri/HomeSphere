@@ -2,11 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Fingerprint, Eye, EyeOff } from 'lucide-react';
+import { useAuthHook } from '@/hooks';
 
 export default function PINLogin() {
   const [pin, setPin] = useState(['', '', '', '']);
   const [showPin, setShowPin] = useState(false);
-  const [error, setError] = useState('');
+  const [localError, setLocalError] = useState('');
+  
+  const { loginWithPin, isLoading, error } = useAuthHook();
   const navigate = useNavigate();
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -16,13 +19,19 @@ export default function PINLogin() {
     }
   }, []);
 
+  useEffect(() => {
+    if (error) {
+      setLocalError(error);
+    }
+  }, [error]);
+
   const handleChange = (index: number, value: string) => {
     if (value.length > 1) return;
     
     const newPin = [...pin];
     newPin[index] = value;
     setPin(newPin);
-    setError('');
+    setLocalError('');
 
     if (value && index < 3 && inputRefs.current[index + 1]) {
       inputRefs.current[index + 1]?.focus();
@@ -35,16 +44,20 @@ export default function PINLogin() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const pinValue = pin.join('');
     if (pinValue.length !== 4) {
-      setError('Please enter a 4-digit PIN');
+      setLocalError('Please enter a 4-digit PIN');
       return;
     }
     
-    // In production, you would call the PIN login API here
-    console.log('PIN login with:', pinValue);
-    navigate('/dashboard');
+    try {
+      // Use a default username or get from localStorage
+      const username = localStorage.getItem('username') || 'user';
+      await loginWithPin(username, pinValue);
+    } catch (err: any) {
+      setLocalError(err.message || 'Invalid PIN. Please try again.');
+    }
   };
 
   return (
@@ -61,6 +74,7 @@ export default function PINLogin() {
             <button
               onClick={() => navigate('/login')}
               className="flex items-center gap-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-4"
+              disabled={isLoading}
             >
               <ArrowLeft className="w-5 h-5" />
               <span>Back to login</span>
@@ -101,7 +115,8 @@ export default function PINLogin() {
                     onChange={(e) => handleChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     autoComplete="one-time-code"
-                    className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                    className="w-12 h-14 text-center text-xl font-bold border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+                    disabled={isLoading}
                   />
                 </motion.div>
               ))}
@@ -112,19 +127,20 @@ export default function PINLogin() {
               type="button"
               onClick={() => setShowPin(!showPin)}
               className="flex items-center gap-2 mx-auto text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400"
+              disabled={isLoading}
             >
               {showPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               <span>{showPin ? 'Hide' : 'Show'} PIN</span>
             </button>
 
             {/* Error Message */}
-            {error && (
+            {(localError || error) && (
               <motion.p
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="text-red-500 text-sm text-center mt-3"
               >
-                {error}
+                {localError || error}
               </motion.p>
             )}
           </div>
@@ -135,16 +151,25 @@ export default function PINLogin() {
             onClick={handleSubmit}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-700 dark:to-blue-800 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            disabled={isLoading}
           >
-            <span>Sign In with PIN</span>
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Signing In...</span>
+              </div>
+            ) : (
+              <span>Sign In with PIN</span>
+            )}
           </motion.button>
 
           {/* Fingerprint Option */}
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-3 mt-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 mt-4 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+            disabled={isLoading}
           >
             <Fingerprint className="w-5 h-5" />
             <span>Sign in with Fingerprint</span>
