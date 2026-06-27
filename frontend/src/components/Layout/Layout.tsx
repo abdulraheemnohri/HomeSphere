@@ -24,7 +24,11 @@ import {
   ListTodo,
   TreePalm,
   Gem,
-  Banknote
+  Banknote,
+  Stethoscope,
+  FolderOpen,
+  AlertTriangle,
+  Bank
 } from 'lucide-react';
 
 const navItems = [
@@ -34,11 +38,20 @@ const navItems = [
   { name: 'Expenses', href: '/expenses', icon: CreditCard },
   { name: 'Budget', href: '/budget', icon: PiggyBank },
   { name: 'Bills', href: '/bills', icon: FileText },
+  { name: 'Loans', href: '/loans', icon: Banknote },
   { name: 'Properties', href: '/properties', icon: Building2 },
   { name: 'Animals', href: '/animals', icon: Dog },
   { name: 'Vehicles', href: '/vehicles', icon: Car },
   { name: 'Calendar', href: '/calendar', icon: Calendar },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
+  { name: 'Health', href: '/health', icon: Heart },
+  { name: 'Documents', href: '/documents', icon: FolderOpen },
+  { name: 'Emergency', href: '/emergency', icon: AlertTriangle },
+  { name: 'Shopping', href: '/shopping', icon: ShoppingCart },
+  { name: 'Tasks', href: '/tasks', icon: ListTodo },
+  { name: 'Farm', href: '/farm', icon: TreePalm },
+  { name: 'Assets', href: '/assets', icon: Gem },
+  { name: 'Bank Accounts', href: '/bank-accounts', icon: Bank },
   { name: 'AI Assistant', href: '/ai', icon: Bot },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
@@ -138,11 +151,7 @@ export default function Layout() {
                       <li key={item.name}>
                         <button
                           onClick={() => handleNavigate(item.href)}
-                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                            isActive
-                              ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                              : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                          }`}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                         >
                           <item.icon className={`w-5 h-5 ${isActive ? 'text-blue-600 dark:text-blue-400' : ''}`} />
                           <span className="flex-1 text-left">{item.name}</span>
@@ -170,11 +179,7 @@ export default function Layout() {
                 <li key={item.name}>
                   <button
                     onClick={() => handleNavigate(item.href)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${
-                      isActive
-                        ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium'
-                        : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all group ${isActive ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                   >
                     <item.icon className={`w-5 h-5 ${isActive ? 'text-blue-600 dark:text-blue-400' : ''}`} />
                     <span className="flex-1 text-left">{item.name}</span>
@@ -195,11 +200,7 @@ export default function Layout() {
               <button
                 key={item.name}
                 onClick={() => handleNavigate(item.href)}
-                className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all ${
-                  isActive 
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' 
-                    : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                }`}
+                className={`flex flex-col items-center gap-1 py-2 px-4 rounded-xl transition-all ${isActive ? 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
               >
                 <item.icon className={`w-5 h-5 ${isActive ? 'scale-110' : ''}`} />
                 <span className="text-xs font-medium">{item.name}</span>
