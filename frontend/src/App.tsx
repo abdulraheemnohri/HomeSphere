@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Layout from "./components/Layout/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
 import Dashboard from "./pages/Dashboard/Dashboard";
 import Family from "./pages/Family/Family";
 import Income from "./pages/Income/Income";
@@ -23,6 +24,7 @@ import Farm from "./pages/Farm/Farm";
 import Assets from "./pages/Assets/Assets";
 import BankAccounts from "./pages/BankAccounts/BankAccounts";
 import Login from "./pages/Auth/Login";
+import Register from "./pages/Auth/Register";
 import PINLogin from "./pages/Auth/PINLogin";
 
 export default function App() {
@@ -30,33 +32,36 @@ export default function App() {
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/pin-login" element={<PINLogin />} />
 
       {/* Protected Routes with Layout */}
       <Route element={<Layout />}>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/family" element={<Family />} />
-        <Route path="/income" element={<Income />} />
-        <Route path="/expenses" element={<Expenses />} />
-        <Route path="/budget" element={<Budget />} />
-        <Route path="/bills" element={<Bills />} />
-        <Route path="/loans" element={<Loans />} />
-        <Route path="/properties" element={<Properties />} />
-        <Route path="/animals" element={<Animals />} />
-        <Route path="/vehicles" element={<Vehicles />} />
-        <Route path="/calendar" element={<Calendar />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/ai" element={<AIAssistant />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/health" element={<Health />} />
-        <Route path="/documents" element={<Documents />} />
-        <Route path="/emergency" element={<Emergency />} />
-        <Route path="/shopping" element={<Shopping />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/farm" element={<Farm />} />
-        <Route path="/assets" element={<Assets />} />
-        <Route path="/bank-accounts" element={<BankAccounts />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/family" element={<Family />} />
+          <Route path="/income" element={<Income />} />
+          <Route path="/expenses" element={<Expenses />} />
+          <Route path="/budget" element={<Budget />} />
+          <Route path="/bills" element={<Bills />} />
+          <Route path="/loans" element={<Loans />} />
+          <Route path="/properties" element={<Properties />} />
+          <Route path="/animals" element={<Animals />} />
+          <Route path="/vehicles" element={<Vehicles />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/ai" element={<AIAssistant />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/health" element={<Health />} />
+          <Route path="/documents" element={<Documents />} />
+          <Route path="/emergency" element={<Emergency />} />
+          <Route path="/shopping" element={<Shopping />} />
+          <Route path="/tasks" element={<Tasks />} />
+          <Route path="/farm" element={<Farm />} />
+          <Route path="/assets" element={<Assets />} />
+          <Route path="/bank-accounts" element={<BankAccounts />} />
+        </Route>
       </Route>
 
       {/* Fallback */}
