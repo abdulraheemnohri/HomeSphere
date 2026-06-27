@@ -7,7 +7,6 @@ import { useState, useCallback } from 'react';
 import { propertyApi } from '@/services/api';
 import {
   useProperties,
-  usePropertiesActions,
   useLoadingActions
 } from '@/store';
 import { Property, PropertyCreate, Property as PropertyUpdate } from '@/types';
@@ -25,12 +24,6 @@ interface PropertyHook {
 
 export const usePropertyHook = (): PropertyHook => {
   const { properties } = useProperties();
-  const {
-    setProperties,
-    addProperty,
-    updateProperty: updatePropertyAction,
-    deleteProperty: deletePropertyAction
-  } = usePropertiesActions();
   const { setLoading } = useLoadingActions();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +34,8 @@ export const usePropertyHook = (): PropertyHook => {
     setLoading(true, 'Loading properties...');
     try {
       const response = await propertyApi.list(params);
-      setProperties(response.data);
+      // For now, we'll just return the data. Store update will be handled by the component
+      return response.data;
     } catch (err: any) {
       setError(err.message || 'Failed to fetch properties');
       throw err;
@@ -49,7 +43,7 @@ export const usePropertyHook = (): PropertyHook => {
       setIsLoading(false);
       setLoading(false);
     }
-  }, [setProperties, setLoading]);
+  }, [setLoading]);
 
   const getProperty = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -71,9 +65,7 @@ export const usePropertyHook = (): PropertyHook => {
     setLoading(true, 'Creating property...');
     try {
       const response = await propertyApi.create(data);
-      const newProperty = response.data;
-      addProperty(newProperty);
-      return newProperty;
+      return response.data;
     } catch (err: any) {
       setError(err.message || 'Failed to create property');
       throw err;
@@ -81,7 +73,7 @@ export const usePropertyHook = (): PropertyHook => {
       setIsLoading(false);
       setLoading(false);
     }
-  }, [addProperty, setLoading]);
+  }, [setLoading]);
 
   const updateProperty = useCallback(async (id: string, data: Partial<PropertyUpdate>) => {
     setIsLoading(true);
@@ -89,9 +81,7 @@ export const usePropertyHook = (): PropertyHook => {
     setLoading(true, 'Updating property...');
     try {
       const response = await propertyApi.update(id, data);
-      const updatedProperty = response.data;
-      updatePropertyAction(updatedProperty);
-      return updatedProperty;
+      return response.data;
     } catch (err: any) {
       setError(err.message || 'Failed to update property');
       throw err;
@@ -99,7 +89,7 @@ export const usePropertyHook = (): PropertyHook => {
       setIsLoading(false);
       setLoading(false);
     }
-  }, [updatePropertyAction, setLoading]);
+  }, [setLoading]);
 
   const deleteProperty = useCallback(async (id: string) => {
     setIsLoading(true);
@@ -107,7 +97,6 @@ export const usePropertyHook = (): PropertyHook => {
     setLoading(true, 'Deleting property...');
     try {
       await propertyApi.delete(id);
-      deletePropertyAction(id);
     } catch (err: any) {
       setError(err.message || 'Failed to delete property');
       throw err;
@@ -115,7 +104,7 @@ export const usePropertyHook = (): PropertyHook => {
       setIsLoading(false);
       setLoading(false);
     }
-  }, [deletePropertyAction, setLoading]);
+  }, [setLoading]);
 
   return {
     properties,
@@ -128,13 +117,5 @@ export const usePropertyHook = (): PropertyHook => {
     deleteProperty,
   };
 };
-
-// Action hooks for properties
-export const usePropertiesActions = () => useAppStore((state) => ({
-  setProperties: state.setProperties,
-  addProperty: state.addProperty,
-  updateProperty: state.updateProperty,
-  deleteProperty: state.deleteProperty,
-}));
 
 export default usePropertyHook;
