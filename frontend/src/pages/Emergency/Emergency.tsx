@@ -1,0 +1,425 @@
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { AlertTriangle, Plus, Search, Filter, MoreVertical, Phone, User, Home, Hospital, Police, FireExtinguisher, MapPin, Clock } from 'lucide-react';
+
+export default function Emergency() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+
+  const emergencyContacts = [
+    { id: '1', name: 'Police Station', type: 'Police', phone: '15', address: 'Local Police Station, Main Road', notes: 'Emergency police number', isVerified: true },
+    { id: '2', name: 'Fire Brigade', type: 'Fire', phone: '16', address: 'Fire Station, City Center', notes: 'Emergency fire service', isVerified: true },
+    { id: '3', name: 'Rescue 1122', type: 'Medical', phone: '1122', address: 'Rescue Service, All Cities', notes: 'Medical emergency and rescue service', isVerified: true },
+    { id: '4', name: 'Hospital Emergency', type: 'Medical', phone: '042-111-222-333', address: 'City Hospital, Emergency Ward', notes: '24/7 emergency services', isVerified: true },
+    { id: '5', name: 'Dr. Ahmed Khan', type: 'Doctor', phone: '0300-1234567', address: 'Private Clinic, DHA Phase 1', notes: 'Family doctor, available 24/7', isVerified: true },
+    { id: '6', name: 'Neighbor - Ali', type: 'Neighbor', phone: '0321-9876543', address: 'House #123, Next Street', notes: 'Trusted neighbor, has spare keys', isVerified: false },
+    { id: '7', name: 'Relative - Uncle Farhan', type: 'Family', phone: '0333-5556667', address: '123 Main Street, Lahore', notes: 'Emergency contact person', isVerified: true },
+    { id: '8', name: 'Electrician', type: 'Service', phone: '0301-2223334', address: 'Electric Services, Near Market', notes: '24/7 electrical emergency service', isVerified: true },
+    { id: '9', name: 'Plumber', type: 'Service', phone: '0312-3456789', address: 'Plumbing Services, City Area', notes: 'Emergency plumbing services', isVerified: false },
+  ];
+
+  const filteredContacts = emergencyContacts.filter(contact =>
+    contact.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    contact.phone.includes(searchQuery) ||
+    contact.address.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const verifiedContacts = filteredContacts.filter(c => c.isVerified).length;
+  const totalContacts = filteredContacts.length;
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'Police':
+        return Police;
+      case 'Fire':
+        return FireExtinguisher;
+      case 'Medical':
+        return Hospital;
+      case 'Doctor':
+        return User;
+      case 'Neighbor':
+        return Home;
+      case 'Family':
+        return User;
+      case 'Service':
+        return AlertTriangle;
+      default:
+        return Phone;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'Police':
+        return 'from-blue-500 to-blue-700';
+      case 'Fire':
+        return 'from-red-500 to-orange-500';
+      case 'Medical':
+        return 'from-red-500 to-pink-500';
+      case 'Doctor':
+        return 'from-green-500 to-teal-500';
+      case 'Neighbor':
+        return 'from-purple-500 to-violet-500';
+      case 'Family':
+        return 'from-indigo-500 to-purple-500';
+      case 'Service':
+        return 'from-yellow-500 to-orange-500';
+      default:
+        return 'from-gray-500 to-gray-700';
+    }
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+      >
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Emergency Contacts</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Quick access to emergency contacts and services</p>
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => setIsAdding(true)}
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-600 to-orange-700 dark:from-orange-700 dark:to-orange-800 text-white font-medium rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all"
+        >
+          <Plus className="w-5 h-5" />
+          <span>Add Contact</span>
+        </motion.button>
+      </motion.div>
+
+      {/* Stats */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-4"
+      >
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 rounded-xl bg-orange-100 dark:bg-orange-900/20">
+              <AlertTriangle className="w-6 h-6 text-orange-600 dark:text-orange-400" />
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Total Contacts</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{totalContacts}</p>
+        </div>
+
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 rounded-xl bg-green-100 dark:bg-green-900/20">
+              <Phone className="w-6 h-6 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Verified Contacts</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">{verifiedContacts}</p>
+        </div>
+
+        <div className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-3 rounded-xl bg-red-100 dark:bg-red-900/20">
+              <Hospital className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+          </div>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Emergency Services</p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white">3</p>
+        </div>
+      </motion.div>
+
+      {/* Quick Dial */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
+      >
+        <div className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Quick Dial - Emergency Numbers</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-4 p-4 bg-red-50 dark:bg-red-900/10 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
+            >
+              <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center">
+                <Police className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900 dark:text-white">Police</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">15</p>
+              </div>
+            </motion.button>
+
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-4 p-4 bg-orange-50 dark:bg-orange-900/10 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/20 transition-colors"
+            >
+              <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center">
+                <FireExtinguisher className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900 dark:text-white">Fire Brigade</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">16</p>
+              </div>
+            </motion.button>
+
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center gap-4 p-4 bg-green-50 dark:bg-green-900/10 rounded-xl hover:bg-green-100 dark:hover:bg-green-900/20 transition-colors"
+            >
+              <div className="w-12 h-12 bg-green-500 rounded-xl flex items-center justify-center">
+                <Hospital className="w-6 h-6 text-white" />
+              </div>
+              <div className="text-left">
+                <p className="font-semibold text-gray-900 dark:text-white">Rescue 1122</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">1122</p>
+              </div>
+            </motion.button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Search and Filter */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        className="flex flex-col md:flex-row gap-4"
+      >
+        <div className="relative flex-1">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search emergency contacts..."
+            className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+          />
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="flex items-center gap-2 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        >
+          <Filter className="w-5 h-5" />
+          <span>Filter</span>
+        </motion.button>
+      </motion.div>
+
+      {/* Emergency Contacts List */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+        className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden"
+      >
+        <div className="p-6">
+          <div className="space-y-4">
+            {filteredContacts.map((contact, index) => {
+              const TypeIcon = getTypeIcon(contact.type);
+              const typeColor = getTypeColor(contact.type);
+              return (
+                <motion.div
+                  key={contact.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 + 0.05 * index }}
+                  className="flex items-center gap-4 p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors group"
+                >
+                  <div className={`w-12 h-12 bg-gradient-to-br ${typeColor} rounded-xl flex items-center justify-center`}>
+                    <TypeIcon className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-white truncate">{contact.name}</p>
+                    <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+                      <span className="flex items-center gap-1">
+                        <Phone className="w-4 h-4" />
+                        {contact.phone}
+                      </span>
+                      <span className="flex items-center gap-1 truncate">
+                        <MapPin className="w-4 h-4" />
+                        {contact.address}
+                      </span>
+                    </div>
+                    {contact.notes && (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1 truncate">{contact.notes}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {contact.isVerified && (
+                      <span className="text-xs bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 px-2 py-0.5 rounded-full font-medium">
+                        Verified
+                      </span>
+                    )}
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="p-2 rounded-lg bg-green-50 dark:bg-green-900/10 hover:bg-green-100 dark:hover:bg-green-900/20 transition-colors"
+                      title="Call"
+                    >
+                      <Phone className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors opacity-0 group-hover:opacity-100"
+                      title="More"
+                    >
+                      <MoreVertical className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                    </motion.button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {filteredContacts.length === 0 && (
+            <div className="text-center py-12">
+              <AlertTriangle className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">No emergency contacts found</p>
+            </div>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Add Emergency Contact Modal */}
+      {isAdding && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+          onClick={() => setIsAdding(false)}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-white dark:bg-gray-900 rounded-2xl p-6 w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">Add Emergency Contact</h3>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsAdding(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
+              >
+                <span className="text-xl">×</span>
+              </motion.button>
+            </div>
+            
+            <form className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Contact Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter contact name"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Contact Type
+                </label>
+                <select className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all">
+                  <option>Select contact type</option>
+                  <option>Police</option>
+                  <option>Fire</option>
+                  <option>Medical</option>
+                  <option>Doctor</option>
+                  <option>Neighbor</option>
+                  <option>Family</option>
+                  <option>Service</option>
+                  <option>Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  placeholder="Enter phone number"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Address
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter address"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Notes
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Enter any notes or additional information"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none transition-all resize-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="verified" className="w-4 h-4 text-orange-600 border-gray-300 rounded focus:ring-orange-500" />
+                <label htmlFor="verified" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Verified Contact
+                </label>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsAdding(false)}
+                  className="px-6 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                >
+                  Cancel
+                </motion.button>
+                <motion.button
+                  type="submit"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-6 py-2.5 bg-gradient-to-r from-orange-600 to-orange-700 dark:from-orange-700 dark:to-orange-800 text-white font-medium rounded-xl hover:from-orange-700 hover:to-orange-800 transition-all"
+                >
+                  Add Contact
+                </motion.button>
+              </div>
+            </form>
+          </motion.div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
