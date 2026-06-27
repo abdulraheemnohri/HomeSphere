@@ -1,20 +1,29 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
-import Layout from './components/Layout/Layout';
-import Dashboard from './pages/Dashboard/Dashboard';
-import Family from './pages/Family/Family';
-import Income from './pages/Income/Income';
-import Expenses from './pages/Expenses/Expenses';
-import Budget from './pages/Budget/Budget';
-import Bills from './pages/Bills/Bills';
-import Properties from './pages/Properties/Properties';
-import Animals from './pages/Animals/Animals';
-import Vehicles from './pages/Vehicles/Vehicles';
-import Calendar from './pages/Calendar/Calendar';
-import Reports from './pages/Reports/Reports';
-import Settings from './pages/Settings/Settings';
-import AIAssistant from './pages/AI/AIAssistant';
-import Login from './pages/Auth/Login';
-import PINLogin from './pages/Auth/PINLogin';
+import { Routes, Route, Navigate } from "react-router-dom";
+import Layout from "./components/Layout/Layout";
+import Dashboard from "./pages/Dashboard/Dashboard";
+import Family from "./pages/Family/Family";
+import Income from "./pages/Income/Income";
+import Expenses from "./pages/Expenses/Expenses";
+import Budget from "./pages/Budget/Budget";
+import Bills from "./pages/Bills/Bills";
+import Loans from "./pages/Loans/Loans";
+import Properties from "./pages/Properties/Properties";
+import Animals from "./pages/Animals/Animals";
+import Vehicles from "./pages/Vehicles/Vehicles";
+import Calendar from "./pages/Calendar/Calendar";
+import Reports from "./pages/Reports/Reports";
+import Settings from "./pages/Settings/Settings";
+import AIAssistant from "./pages/AI/AIAssistant";
+import Health from "./pages/Health/Health";
+import Documents from "./pages/Documents/Documents";
+import Emergency from "./pages/Emergency/Emergency";
+import Shopping from "./pages/Shopping/Shopping";
+import Tasks from "./pages/Tasks/Tasks";
+import Farm from "./pages/Farm/Farm";
+import Assets from "./pages/Assets/Assets";
+import BankAccounts from "./pages/BankAccounts/BankAccounts";
+import Login from "./pages/Auth/Login";
+import PINLogin from "./pages/Auth/PINLogin";
 
 export default function App() {
   return (
@@ -32,6 +41,7 @@ export default function App() {
         <Route path="/expenses" element={<Expenses />} />
         <Route path="/budget" element={<Budget />} />
         <Route path="/bills" element={<Bills />} />
+        <Route path="/loans" element={<Loans />} />
         <Route path="/properties" element={<Properties />} />
         <Route path="/animals" element={<Animals />} />
         <Route path="/vehicles" element={<Vehicles />} />
@@ -39,6 +49,14 @@ export default function App() {
         <Route path="/reports" element={<Reports />} />
         <Route path="/ai" element={<AIAssistant />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/health" element={<Health />} />
+        <Route path="/documents" element={<Documents />} />
+        <Route path="/emergency" element={<Emergency />} />
+        <Route path="/shopping" element={<Shopping />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/farm" element={<Farm />} />
+        <Route path="/assets" element={<Assets />} />
+        <Route path="/bank-accounts" element={<BankAccounts />} />
       </Route>
 
       {/* Fallback */}
