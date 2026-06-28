@@ -16,7 +16,8 @@ from database.database import engine, SessionLocal
 from database.models import (
     Base, User, FamilyMember, Income, Expense, Budget, Bill, Loan,
     Property, Vehicle, Animal, HealthRecord, Document, EmergencyContact,
-    ShoppingList, Task, FarmActivity, Asset, BankAccount, CalendarEvent
+    ShoppingList, Task, FarmActivity, Asset, BankAccount, CalendarEvent,
+    Room, InventoryItem
 )
 
 # Authentication imports
@@ -664,6 +665,82 @@ def delete_property(property_id: str, current_user: User = Depends(get_current_a
     return {"message": "Property deleted successfully"}
 
 
+
+
+# ==================== Room ====================
+
+class RoomBase(BaseModel):
+    name: str
+    room_type: str
+    area: Optional[float] = None
+    area_unit: str = "sq ft"
+    floor_number: Optional[int] = None
+    has_window: bool = False
+    has_bathroom: bool = False
+    has_ac: bool = False
+    has_heater: bool = False
+    furniture: Optional[List[Dict]] = None
+    electronics: Optional[List[Dict]] = None
+    cleaning_schedule: Optional[str] = None
+    last_cleaned: Optional[date] = None
+    next_cleaning: Optional[date] = None
+    maintenance_notes: Optional[str] = None
+    photos: Optional[List[str]] = None
+    is_active: bool = True
+
+class RoomCreate(RoomBase):
+    property_id: str
+
+class RoomResponse(RoomBase):
+    id: str
+    property_id: str
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/rooms/", response_model=RoomResponse, tags=["Property"])
+def create_room(room: RoomCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_room = Room(**room.model_dump(), user_id=current_user.id)
+    db.add(db_room)
+    db.commit()
+    db.refresh(db_room)
+    return db_room
+
+@app.get("/api/rooms/", response_model=List[RoomResponse], tags=["Property"])
+def read_rooms(property_id: Optional[str] = None, skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(Room).filter(Room.user_id == current_user.id)
+    if property_id:
+        query = query.filter(Room.property_id == property_id)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/rooms/{room_id}", response_model=RoomResponse, tags=["Property"])
+def read_room(room_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    room = db.query(Room).filter(Room.id == room_id, Room.user_id == current_user.id).first()
+    if not room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    return room
+
+@app.put("/api/rooms/{room_id}", response_model=RoomResponse, tags=["Property"])
+def update_room(room_id: str, room: RoomBase, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_room = db.query(Room).filter(Room.id == room_id, Room.user_id == current_user.id).first()
+    if not db_room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    for key, value in room.model_dump().items():
+        setattr(db_room, key, value)
+    db_room.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_room)
+    return db_room
+
+@app.delete("/api/rooms/{room_id}", tags=["Property"])
+def delete_room(room_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_room = db.query(Room).filter(Room.id == room_id, Room.user_id == current_user.id).first()
+    if not db_room:
+        raise HTTPException(status_code=404, detail="Room not found")
+    db.delete(db_room)
+    db.commit()
+    return {"message": "Room deleted successfully"}
 # ==================== Vehicle ====================
 
 class VehicleBase(BaseModel):
@@ -1144,6 +1221,105 @@ def delete_shopping_list(list_id: str, current_user: User = Depends(get_current_
     return {"message": "Shopping list deleted successfully"}
 
 
+
+
+# ==================== Inventory ====================
+
+class InventoryItemBase(BaseModel):
+    name: str
+    category: str
+    subcategory: Optional[str] = None
+    description: Optional[str] = None
+    quantity: int = 1
+    unit: str = "unit"
+    purchase_date: Optional[date] = None
+    purchase_price: Optional[float] = None
+    current_value: Optional[float] = None
+    barcode: Optional[str] = None
+    qr_code: Optional[str] = None
+    brand: Optional[str] = None
+    model: Optional[str] = None
+    serial_number: Optional[str] = None
+    location: Optional[str] = None
+    warranty_period: Optional[int] = None
+    warranty_expiry_date: Optional[date] = None
+    condition: str = "Good"
+    status: str = "active"
+    low_stock_alert: int = 5
+    last_used_date: Optional[date] = None
+    last_maintenance_date: Optional[date] = None
+    next_maintenance_date: Optional[date] = None
+    maintenance_notes: Optional[str] = None
+    notes: Optional[str] = None
+    photos: Optional[List[str]] = None
+    documents: Optional[List[str]] = None
+    tags: Optional[List[str]] = None
+    is_active: bool = True
+
+class InventoryItemCreate(InventoryItemBase):
+    room_id: Optional[str] = None
+
+class InventoryItemResponse(InventoryItemBase):
+    id: str
+    user_id: str
+    room_id: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+@app.post("/api/inventory/", response_model=InventoryItemResponse, tags=["Inventory"])
+def create_inventory_item(item: InventoryItemCreate, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_item = InventoryItem(**item.model_dump(), user_id=current_user.id)
+    db.add(db_item)
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+@app.get("/api/inventory/", response_model=List[InventoryItemResponse], tags=["Inventory"])
+def read_inventory_items(room_id: Optional[str] = None, category: Optional[str] = None, skip: int = 0, limit: int = 100, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    query = db.query(InventoryItem).filter(InventoryItem.user_id == current_user.id)
+    if room_id:
+        query = query.filter(InventoryItem.room_id == room_id)
+    if category:
+        query = query.filter(InventoryItem.category == category)
+    return query.offset(skip).limit(limit).all()
+
+@app.get("/api/inventory/{item_id}", response_model=InventoryItemResponse, tags=["Inventory"])
+def read_inventory_item(item_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    item = db.query(InventoryItem).filter(InventoryItem.id == item_id, InventoryItem.user_id == current_user.id).first()
+    if not item:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+    return item
+
+@app.put("/api/inventory/{item_id}", response_model=InventoryItemResponse, tags=["Inventory"])
+def update_inventory_item(item_id: str, item: InventoryItemBase, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_item = db.query(InventoryItem).filter(InventoryItem.id == item_id, InventoryItem.user_id == current_user.id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+    for key, value in item.model_dump().items():
+        setattr(db_item, key, value)
+    db_item.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(db_item)
+    return db_item
+
+@app.delete("/api/inventory/{item_id}", tags=["Inventory"])
+def delete_inventory_item(item_id: str, current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    db_item = db.query(InventoryItem).filter(InventoryItem.id == item_id, InventoryItem.user_id == current_user.id).first()
+    if not db_item:
+        raise HTTPException(status_code=404, detail="Inventory item not found")
+    db.delete(db_item)
+    db.commit()
+    return {"message": "Inventory item deleted successfully"}
+
+@app.get("/api/inventory/low-stock", response_model=List[InventoryItemResponse], tags=["Inventory"])
+def get_low_stock_items(current_user: User = Depends(get_current_active_user), db=Depends(get_db)):
+    return db.query(InventoryItem).filter(
+        InventoryItem.user_id == current_user.id,
+        InventoryItem.quantity < InventoryItem.low_stock_alert,
+        InventoryItem.is_active == True
+    ).all()
 # ==================== Task ====================
 
 class TaskBase(BaseModel):
