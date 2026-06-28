@@ -1,0 +1,58 @@
+version: "3.8"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - CHOKIDAR_USEPOLLING=true
+    restart: unless-stopped
+    networks:
+      - homesphere
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=sqlite:///./homesphere.db
+      - SECRET_KEY=your-secret-key-change-in-production
+      - DEBUG=true
+      - CORS_ORIGINS=http://localhost:3000
+    restart: unless-stopped
+    networks:
+      - homesphere
+    depends_on:
+      - frontend
+
+  # Optional PostgreSQL service
+  # postgres:
+  #   image: postgres:15
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     - POSTGRES_USER=homesphere
+  #     - POSTGRES_PASSWORD=homesphere
+  #     - POSTGRES_DB=homesphere
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - homesphere
+
+networks:
+  homesphere:
+    driver: bridge
+
+# volumes:
+#   postgres_data:
