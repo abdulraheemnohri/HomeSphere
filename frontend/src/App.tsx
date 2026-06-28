@@ -19,6 +19,8 @@ import Health from "./pages/Health/Health";
 import Documents from "./pages/Documents/Documents";
 import Emergency from "./pages/Emergency/Emergency";
 import Shopping from "./pages/Shopping/Shopping";
+import Inventory from "./pages/Inventory/Inventory";
+import Rooms from "./pages/Rooms/Rooms";
 import Tasks from "./pages/Tasks/Tasks";
 import Farm from "./pages/Farm/Farm";
 import Assets from "./pages/Assets/Assets";
